@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export interface Customer {
-  _id?: string;
+  id?: string;
   accountNumber: string;
   lastName: string;
   firstName: string;
@@ -16,8 +16,6 @@ export interface Customer {
   address: string;
   contact: string;
   dueDate: string;
-  monthlyAmount: number | null;
-  balance?: number | null;
 }
 
 export default function CustomerPage() {

@@ -2,21 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Customer } from "./page";
-import { findCustomers, getCustomers } from "@/api/customerApi";
+import { Plan } from "./page";
+import { findPlans, getPlans } from "@/api/planApi";
 import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { NumericFormat } from "react-number-format";
 
-export default function CustomersComponent() {
+export default function PlansComponent() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Array<Customer>>([])
+  const [data, setData] = useState<Array<Plan>>([])
 
   const getList = async () => {
-    const list = await getCustomers();
+    const list = await getPlans();
     if (list?.data) setData(list.data);
   }
 
@@ -27,12 +27,12 @@ export default function CustomersComponent() {
   const handleSearch = async (e: any) => {
     const value = e.target.value;
     setSearch(value);
-    const res = await findCustomers(value);
+    const res = await findPlans(value);
     if (res?.data) setData(res.data);
   };
 
   const openCustomer = (customerId: string) => {
-    router.push(`/customers/${customerId}`)
+    router.push(`/plans/${customerId}`)
   }
 
   return (
@@ -58,14 +58,14 @@ export default function CustomersComponent() {
           </span>
           <input
             type="text"
-            placeholder="Search customer..."
+            placeholder="Search plan..."
             value={search}
             onChange={handleSearch}
             className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
           />
         </div>
         <Button size="sm" variant="primary" startIcon={<HiOutlinePlus color="#ffffff" />} onClick={() => openCustomer('new')}>
-          Add Customer
+          Add Plan
         </Button>
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -79,59 +79,26 @@ export default function CustomersComponent() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    Account Number
+                    Plan Name
                   </TableCell>
                   <TableCell
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    Name
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Address
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Due Date
-                  </TableCell>
-                  <TableCell
-                    isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                  >
-                    Contact
+                    Price
                   </TableCell>
                 </TableRow>
               </TableHeader>
 
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {data?.map((customer, idx) => (
-                  <TableRow key={idx} className="cursor-pointer" onClick={() => {openCustomer(customer?.id ?? '')}}>
+                {data?.map((plan, idx) => (
+                  <TableRow key={idx} className="cursor-pointer" onClick={() => {openCustomer(plan?.id ?? '')}}>
                     <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400">
-                      {customer.accountNumber}
+                      {plan.planName}
                     </TableCell>
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {`${customer.lastName}, ${customer.firstName} ${customer.middleName}`}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {customer.address}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {customer.dueDate}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {customer.contact}
+                      <NumericFormat value={plan.price} type="text" />
                     </TableCell>
                   </TableRow>
                 ))}

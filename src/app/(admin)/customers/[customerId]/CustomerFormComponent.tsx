@@ -1,21 +1,19 @@
 'use client';
 
-import Head from "next/head";
 import Link from "next/link";
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getCustomer, createUser, updateUser } from '@/api/customerApi';
 import { Customer } from "../page";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
 import { HiOutlineTrash } from "react-icons/hi";
-import { NumericFormat } from "react-number-format";
-import { unformatCurrency } from "@/utils/formatter";
 import toast, { Toaster } from 'react-hot-toast'
+import { TbCalendarDollar } from "react-icons/tb";
 
 const init = {
-  _id: 'new',
+  id: 'new',
   accountNumber: "",
   dueDate: '',
   lastName: '',
@@ -23,13 +21,13 @@ const init = {
   middleName: '',
   address: '',
   contact: '',
-  monthlyAmount: null,
-  balance: null,
 }
 
 export default function CustomerFormComponent() {
   const router = useRouter();
   const {customerId} = useParams();
+  const formRef = useRef(null);
+
   const [customerData, setCustomerData] = useState<Customer>(init)
   const [errors, setErrors] = useState<Customer>({} as Customer);
 
@@ -72,11 +70,12 @@ export default function CustomerFormComponent() {
     return newErrors;
   };
 
-  const onSubmit = async () => {
+  const onSubmit = async (e: any) => {
+    e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length === 0) {
-      const data = {...customerData, monthlyAmount: unformatCurrency(customerData?.monthlyAmount)};
-      delete data._id;
+      const data = {...customerData};
+      delete data.id;
 
       if (customerId === 'new') {
         const res = await createUser(data);
@@ -96,15 +95,19 @@ export default function CustomerFormComponent() {
     }
   }
 
+  if (!customerData?.accountNumber) return <></>;
+
   return (
     <>
-      
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h2
-          className="text-xl font-semibold text-gray-800 dark:text-white/90"
+          className="text-xl font-semibold text-gray-800 dark:text-white/90 capitalize flex items-center gap-[10px]"
           x-text="pageName"
         >
-          {customerId === 'new' ? `New Customer Details` : `${customerData?.firstName} ${customerData?.lastName} Details`}
+          {customerId === 'new' ? `New Customer Details` : `${customerData?.firstName.toLowerCase()} ${customerData?.lastName.toLowerCase()} Details`}
+          {/* <Button size="sm" variant="outline" className="relative ml-4"> */}
+            <TbCalendarDollar size={25} className="cursor-pointer hover:text-blue-600"/>
+          {/* </Button> */}
         </h2>
         <nav>
           <ol className="flex items-center gap-1.5">
@@ -165,10 +168,8 @@ export default function CustomerFormComponent() {
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit();
-          }}
+          ref={formRef}
+          onSubmit={onSubmit}
         >
           <div className="grid gap-6 mb-6 md:grid-cols-2">
             <div>
@@ -221,17 +222,29 @@ export default function CustomerFormComponent() {
                 {errors?.dueDate && <span className="text-[12px] text-error-500 ml-2">{errors?.dueDate}</span>}
               </div>
             </div>
-            <div>
-              <Label>Account Number</Label>
-              <Input
-                type="text"
-                id="accountNumber"
-                name="accountNumber"
-                defaultValue={customerData?.accountNumber ?? ''}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                error={!!errors?.accountNumber}
-              />
-              {errors?.accountNumber && <span className="text-[12px] text-error-500 ml-2">{errors?.accountNumber}</span>}
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <Label>Account Number</Label>
+                <Input
+                  type="text"
+                  id="accountNumber"
+                  name="accountNumber"
+                  defaultValue={customerData?.accountNumber ?? ''}
+                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+                  error={!!errors?.accountNumber}
+                />
+                {errors?.accountNumber && <span className="text-[12px] text-error-500 ml-2">{errors?.accountNumber}</span>}
+              </div>
+              <div>
+                <Label>Contact</Label>
+                <Input
+                  type="text"
+                  id="contact"
+                  name="contact"
+                  defaultValue={customerData?.contact ?? ''}
+                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <div className="mb-6">
@@ -244,50 +257,12 @@ export default function CustomerFormComponent() {
               onChange={(e) => handleOnChange(e.target.name, e.target.value)}
             />
           </div>
-          <div className="grid gap-6 mb-6 md:grid-cols-2">
-            <div>
-              <Label>Contact</Label>
-              <Input
-                type="text"
-                id="contact"
-                name="contact"
-                defaultValue={customerData?.contact ?? ''}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-              />
-            </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <Label>Monthly Payment/Amount</Label>
-                <NumericFormat
-                  id="monthlyAmount"
-                  name="monthlyAmount"
-                  customInput={Input}
-                  prefix="₱ "
-                  thousandSeparator=","
-                  decimalSeparator="."
-                  allowNegative={false}
-                  value={customerData?.monthlyAmount}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                />
-              </div><div>
-                <Label>Balance</Label>
-                <NumericFormat
-                  id="balance"
-                  name="balance"
-                  customInput={Input}
-                  prefix="₱ "
-                  thousandSeparator=","
-                  decimalSeparator="."
-                  allowNegative={false}
-                  value={customerData?.balance}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
           <div className="flex justify-between mt-10">
-            <Button size="sm" variant="primary" onClick={() => onSubmit()}>
-              { customerId !== 'new' ? 'Update' : 'Save' }
+            <Button
+              type="submit"
+              size="sm"
+              variant="primary">
+                { customerId !== 'new' ? 'Update' : 'Save' }
             </Button>
             {customerId !== 'new' && <Button size="sm" variant="danger">
               <HiOutlineTrash size={18} />
