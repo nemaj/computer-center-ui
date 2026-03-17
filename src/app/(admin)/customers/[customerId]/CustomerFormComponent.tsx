@@ -11,6 +11,8 @@ import Button from "@/components/ui/button/Button";
 import { HiOutlineTrash } from "react-icons/hi";
 import toast, { Toaster } from 'react-hot-toast'
 import { TbCalendarDollar } from "react-icons/tb";
+import SubscriptionModal from "@/components/shared/modals/SubscriptionModal";
+import { Tooltip as ReactTooltip } from "react-tooltip";
 
 const init = {
   id: 'new',
@@ -30,6 +32,7 @@ export default function CustomerFormComponent() {
 
   const [customerData, setCustomerData] = useState<Customer>(init)
   const [errors, setErrors] = useState<Customer>({} as Customer);
+  const [openSubscription, setOpenSubscription] = useState(false);
 
   const getInfo = async (id: any) => {
     const res = await getCustomer(id);
@@ -95,7 +98,7 @@ export default function CustomerFormComponent() {
     }
   }
 
-  if (!customerData?.accountNumber) return <></>;
+  if (customerId !== 'new' && !customerData?.accountNumber) return <></>;
 
   return (
     <>
@@ -105,10 +108,14 @@ export default function CustomerFormComponent() {
           x-text="pageName"
         >
           {customerId === 'new' ? `New Customer Details` : `${customerData?.firstName.toLowerCase()} ${customerData?.lastName.toLowerCase()} Details`}
-          {/* <Button size="sm" variant="outline" className="relative ml-4"> */}
-            <TbCalendarDollar size={25} className="cursor-pointer hover:text-blue-600"/>
-          {/* </Button> */}
+          <TbCalendarDollar size={25} className="cursor-pointer hover:text-blue-600" onClick={() => setOpenSubscription(true)} data-tooltip-id="subs-tooltip" />
         </h2>
+        
+        <ReactTooltip
+          id="subs-tooltip"
+          place="right"
+          content="Subscription Details"
+        />
         <nav>
           <ol className="flex items-center gap-1.5">
             <li>
@@ -269,6 +276,7 @@ export default function CustomerFormComponent() {
             </Button>}
           </div>
         </form>
+        <SubscriptionModal customer={customerData} isOpen={openSubscription} closeModal={() => setOpenSubscription(false)} />
         <Toaster />
       </div>
     </>

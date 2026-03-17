@@ -1,4 +1,4 @@
-import { findCustomers } from "@/api/customerApi";
+import { getCustomers } from "@/api/customerApi";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import { Modal } from "@/components/ui/modal";
@@ -37,9 +37,9 @@ const BillingPaymentModal = (props: props) => {
   ];
 
   const loadOptions = async (inputValue: string) => {
-    const response = await findCustomers(inputValue);
+    const response = await getCustomers(1, inputValue);
 
-    return (response?.data ?? []).map((user: any) => ({
+    return (response?.data?.customers ?? []).map((user: any) => ({
       label: `${user?.firstName} ${user.lastName} - ${user?.address}`,
       value: user.id,
     }));

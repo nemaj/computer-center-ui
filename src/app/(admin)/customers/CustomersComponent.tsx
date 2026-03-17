@@ -3,32 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Customer } from "./page";
-import { findCustomers, getCustomers } from "@/api/customerApi";
+import { getCustomers } from "@/api/customerApi";
 import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
-import { NumericFormat } from "react-number-format";
+import Pagination from "@/components/tables/Pagination";
 
 export default function CustomersComponent() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Array<Customer>>([])
+  const [data, setData] = useState<Array<Customer>>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
 
-  const getList = async () => {
-    const list = await getCustomers();
-    if (list?.data) setData(list.data);
+  const getList = async (page: number, search: string = '') => {
+    const list = await getCustomers(page, search);
+    setCurrentPage(list?.data?.page || 1);
+    setTotalPages(list?.data?.totalpages || 1);
+    if (list?.data?.customers) setData(list.data?.customers);
   }
 
   useEffect(() => {
-    getList();
+    getList(1);
   }, [])
 
   const handleSearch = async (e: any) => {
     const value = e.target.value;
     setSearch(value);
-    const res = await findCustomers(value);
-    if (res?.data) setData(res.data);
+    setCurrentPage(1);
+    getList(1, value);
   };
 
   const openCustomer = (customerId: string) => {
@@ -77,13 +81,13 @@ export default function CustomersComponent() {
                 <TableRow>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
                   >
                     Account Number
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[350px]"
                   >
                     Name
                   </TableCell>
@@ -95,13 +99,13 @@ export default function CustomersComponent() {
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[120px]"
                   >
                     Due Date
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
                   >
                     Contact
                   </TableCell>
@@ -115,7 +119,7 @@ export default function CustomersComponent() {
                     <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400">
                       {customer.accountNumber}
                     </TableCell>
-                    <TableCell className="px-5 py-4 sm:px-6 text-start">
+                    <TableCell className="px-4 py-4 text-start">
                       <div className="flex items-center gap-3">
                         <div>
                           <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
@@ -127,7 +131,7 @@ export default function CustomersComponent() {
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       {customer.address}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 pl-6">
                       {customer.dueDate}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -139,6 +143,15 @@ export default function CustomersComponent() {
             </Table>
           </div>
         </div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => {
+            getList(page, search)
+          }}
+        />
       </div>
     </>
   )
