@@ -107,13 +107,15 @@ const SubscriptionModal = (props: props) => {
                     }}
                   >
                     <span className="block font-medium text-xl">{plan.planName}</span>
-                    <span>(<NumericFormat
-                      className="text-center text-sm"
-                      value={plan.price}
-                      displayType="text"
-                      prefix="₱ "
-                      thousandSeparator=","
-                    />)</span>
+                    <span>
+                      (<NumericFormat
+                        className="text-center text-sm"
+                        value={plan.price}
+                        displayType="text"
+                        prefix="₱ "
+                        thousandSeparator=","
+                      />)
+                    </span>
                   </div>
                 ))
               }
@@ -131,10 +133,10 @@ const SubscriptionModal = (props: props) => {
           <button
             onClick={onSubmit}
             type="button"
-            disabled={!startDate || !selectedPlan || hasChanges}
+            disabled={!startDate || !selectedPlan}
             className={classNames(
               "btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto",
-              (!startDate || !selectedPlan || !hasChanges) && "cursor-not-allowed opacity-50"
+              (!startDate || !selectedPlan) && "cursor-not-allowed opacity-50"
             )}
           >
             {subscription?.id ? 'Update' : 'Subscribe'}

@@ -8,6 +8,7 @@ import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Pagination from "@/components/tables/Pagination";
+import CustomerSubsStatus from "@/components/shared/CustomerSubsStatus";
 
 export default function CustomersComponent() {
   const router = useRouter();
@@ -99,15 +100,15 @@ export default function CustomersComponent() {
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[120px]"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[150px]"
                   >
-                    Due Date
+                    Contact
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[250px]"
                   >
-                    Contact
+                    <></>
                   </TableCell>
                 </TableRow>
               </TableHeader>
@@ -115,9 +116,9 @@ export default function CustomersComponent() {
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {data?.map((customer, idx) => (
-                  <TableRow key={idx} className="cursor-pointer" onClick={() => {openCustomer(customer?.id ?? '')}}>
-                    <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400">
-                      {customer.accountNumber}
+                  <TableRow key={idx}>
+                    <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400" >
+                      <span className="cursor-pointer hover:underline text-brand-500" onClick={() => {openCustomer(customer?.id ?? '')}}>{customer.accountNumber}</span>
                     </TableCell>
                     <TableCell className="px-4 py-4 text-start">
                       <div className="flex items-center gap-3">
@@ -131,11 +132,11 @@ export default function CustomersComponent() {
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       {customer.address}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 pl-6">
-                      {customer.dueDate}
-                    </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       {customer.contact}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-center text-theme-sm dark:text-gray-400">
+                      <CustomerSubsStatus customerId={customer.id!} />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,10 +1,16 @@
 import { getCustomers } from "@/api/customerApi";
+import { getInvoices } from "@/api/invoiceApi";
+import { getSubscription } from "@/api/subscriptionApi";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import { Modal } from "@/components/ui/modal";
+import { unformatCurrency } from "@/utils/formatter";
+import classNames from "classnames";
+import { format } from "date-fns";
 import { useState } from "react";
 import { NumericFormat } from "react-number-format";
 import AsyncSelect from "react-select/async";
+import { createPayments } from '@/api/paymentApi';
 
 type props = {
   isOpen: boolean,
@@ -14,29 +20,22 @@ type props = {
 const BillingPaymentModal = (props: props) => {
   const {isOpen, closeModal} = props;
 
-  const currentDate = new Date();
-
-  const [selectedOption, setSelectedOption] = useState<any>(null);
-  const [selectedMonth, setSelectedMonth] = useState<any>(currentDate.getMonth()+1);
-  const [year, setYear] = useState<any>(currentDate.getFullYear());
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [amount, setAmount] = useState<any>();
+  const [loading, setLoading] = useState(false);
+  const [invoices, setInvoices] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
 
-  const monthOptions = [
-    { value: "1", label: "January" },
-    { value: "2", label: "February" },
-    { value: "3", label: "March" },
-    { value: "4", label: "April" },
-    { value: "5", label: "May" },
-    { value: "6", label: "June" },
-    { value: "7", label: "July" },
-    { value: "8", label: "August" },
-    { value: "9", label: "September" },
-    { value: "10", label: "October" },
-    { value: "11", label: "November" },
-    { value: "12", label: "December" },
-  ];
+  const hasError = () => {
+    return !amount ||
+      unformatCurrency(amount) > selectedInvoice?.totalAmount ||
+      !selectedInvoice?.id ||
+      false;
+  }
 
   const loadOptions = async (inputValue: string) => {
+    if (!inputValue) return [];
+  
     const response = await getCustomers(1, inputValue);
 
     return (response?.data?.customers ?? []).map((user: any) => ({
@@ -45,27 +44,92 @@ const BillingPaymentModal = (props: props) => {
     }));
   };
 
-  const onSubmit = () => {
-    console.log(selectedOption)
-    console.log(selectedMonth)
-    console.log(year)
-    console.log(amount)
+  const handleSelectCustomer = async (selected: any) => {
+    try {
+      setLoading(true);
+      console.log(selected, "<== selected")
+      setSelectedCustomer(selected?.value)
+      const { data: subs } = await getSubscription(selected?.value);
+      console.log(subs, '<=== getSubs')
+      if (subs?.id) {
+        const {data: list} = await getInvoices(subs.id);
+        handleInvoiceList(list)
+      }
+    } catch (error) {
+      console.error("API error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const totalPayments = (payments: any) => {
+    if (!payments || !payments?.length) return 0;
+    return payments.reduce((acc: number, item: any) => {
+      return (acc + item.amountPaid)
+    }, 0)
+  }
+
+  const handleInvoiceList = (invoices: any) => {
+    if (!invoices || !invoices?.length) return [];
+    const list = invoices.reduce((acc: any, item: any) => {
+      const totalAmount = item.payments?.length ? item.totalAmount - totalPayments(item.payments) : item.totalAmount;
+      const invoice = {
+        ...item,
+        totalAmount
+      }
+      return [ ...acc, invoice ];
+    }, []);
+
+    console.log(list, "<==== handleInvoiceList")
+    setInvoices(list)
+  }
+
+  const onSubmit = async () => {
+    if (hasError()) return;
+    try {
+      const data = {
+        invoiceId: selectedInvoice.id,
+        amountPaid: unformatCurrency(amount),
+        paymentDate: format(new Date(), 'yyyy-MM-dd'),
+        status: unformatCurrency(amount) === selectedInvoice.totalAmount ? 'paid' : 'partially_paid'
+      }
+
+      console.log(data, '<=== onSubmit data');
+      const res = await createPayments(data);
+      console.log(res, '<=== onSubmit result');
+      if (res.status === 201) {
+        console.log('Payment Created!')
+        handleClose();
+      }
+    } catch (error) {
+      console.error("API error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleClose = () => {
+    setSelectedCustomer(null);
+    setSelectedInvoice(null);
+    setInvoices(null);
+    setAmount(null);
+    closeModal?.();
   }
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={closeModal}
+      onClose={handleClose}
       className="max-w-[700px] p-6 lg:p-10"
     >
-      <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+      <div className="flex flex-col px-2 overflow-visible">
         <div>
           <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             Monthly Bill Payment
           </h5>
         </div>
         <div className="mt-8">
-          <div>
+          <div className="mb-6">
             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Biller
             </label>
@@ -75,58 +139,89 @@ const BillingPaymentModal = (props: props) => {
                 loadOptions={loadOptions}
                 defaultOptions
                 placeholder="Search here..."
-                onChange={(select: any) => setSelectedOption(select.value)}
+                onChange={handleSelectCustomer}
               />
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 mt-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
+          {loading && <>Loading...</>}
+
+          {!loading && invoices && invoices?.length !== 0 ?
+            (
+              <>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Month
+                  Please select:
                 </label>
-                <Select
-                  placeholder="Select Month"
-                  options={monthOptions}
-                  defaultValue={selectedMonth}
-                  onChange={(select) => setSelectedMonth(select)}
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Year
-                </label>
-                <input
-                  id="event-title"
-                  type="text"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Amount
-              </label>
-              <NumericFormat
-                id="amount"
-                name="amount"
-                customInput={Input}
-                prefix="₱ "
-                thousandSeparator=","
-                decimalSeparator="."
-                allowNegative={false}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-          </div>
+                <div className="flex flex-wrap gap-[10px]">
+                  {
+                    invoices?.map((_invoice: any) => (
+                      <div
+                        className={classNames(
+                          "cursor-pointer border rounded-md p-4",
+                          _invoice.id === selectedInvoice?.id && "border-brand-500 hover:border-brand-500 bg-brand-500 hover:bg-brand-500 text-white",
+                          _invoice.id !== selectedInvoice?.id && "hover:border-gray-300 hover:bg-gray-100"
+                        )}
+                        key={_invoice.id}
+                        onClick={() => {
+                          setSelectedInvoice(_invoice);
+                          setAmount(null)
+                        }}
+                      >
+                        <p className="text-center text-lg">{format(_invoice.dueDate, 'MMMM')}</p>
+                        <p className="text-center text-xs">
+                          Amount:{' '}
+                          <NumericFormat
+                            className="text-sm"
+                            value={_invoice.totalAmount}
+                            displayType="text"
+                            prefix="₱ "
+                            thousandSeparator=","
+                          />
+                        </p>
+                      </div>
+                    ))
+                  }
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 mt-6">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                      Amount{" "}
+                      {selectedInvoice?.totalAmount && (
+                        <>
+                          (<NumericFormat
+                            className="text-sm"
+                            value={selectedInvoice.totalAmount}
+                            displayType="text"
+                            prefix="₱ "
+                            thousandSeparator=","
+                          />)
+                        </>
+                      )}
+                    </label>
+                    <NumericFormat
+                      id="amount"
+                      name="amount"
+                      customInput={Input}
+                      prefix="₱ "
+                      thousandSeparator=","
+                      decimalSeparator="."
+                      allowNegative={false}
+                      value={amount}
+                      disabled={!selectedInvoice?.id}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : invoices !== null ? (
+              <p className="text-sm text-error-500 ml-2">No invoice found.</p>
+            ) : (<></>)
+          }
         </div>
         <div className="flex items-center gap-3 mt-10 modal-footer sm:justify-end">
           <button
-            onClick={closeModal}
+            onClick={handleClose}
             type="button"
             className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
           >
@@ -135,7 +230,11 @@ const BillingPaymentModal = (props: props) => {
           <button
             onClick={onSubmit}
             type="button"
-            className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+            disabled={hasError()}
+            className={classNames(
+              "btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto",
+              hasError() && "cursor-not-allowed opacity-50"
+            )}
           >
             Submit Payment
           </button>

@@ -64,11 +64,6 @@ export default function CustomerFormComponent() {
     if (!customerData.accountNumber) {
       newErrors.accountNumber = "Account number is required";
     }
-    if (!customerData.dueDate) {
-      newErrors.dueDate = "Due date is required";
-    } else if (parseInt(customerData.dueDate) > 0 && parseInt(customerData.dueDate) > 31) {
-      newErrors.dueDate = "Due date should the day of the Month (1 - 31)";
-    }
 
     return newErrors;
   };
@@ -110,7 +105,6 @@ export default function CustomerFormComponent() {
           {customerId === 'new' ? `New Customer Details` : `${customerData?.firstName.toLowerCase()} ${customerData?.lastName.toLowerCase()} Details`}
           <TbCalendarDollar size={25} className="cursor-pointer hover:text-blue-600" onClick={() => setOpenSubscription(true)} data-tooltip-id="subs-tooltip" />
         </h2>
-        
         <ReactTooltip
           id="subs-tooltip"
           place="right"
@@ -144,7 +138,7 @@ export default function CustomerFormComponent() {
             </li>
             <li className="text-sm text-gray-800 dark:text-white/90">
               <Link
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:underline"
                 href="/customers"
               >
                 Customers
@@ -215,18 +209,6 @@ export default function CustomerFormComponent() {
                   defaultValue={customerData?.middleName ?? ''}
                   onChange={(e) => handleOnChange(e.target.name, e.target.value)}
                 />
-              </div><div>
-                <Label>Due Date <span className="text-[12px] italic">(Day of the Month)</span></Label>
-                <Input
-                  type="text"
-                  id="dueDate"
-                  name="dueDate"
-                  placeholder="1 - 31"
-                  defaultValue={customerData?.dueDate ?? ''}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                  error={!!errors?.dueDate}
-                />
-                {errors?.dueDate && <span className="text-[12px] text-error-500 ml-2">{errors?.dueDate}</span>}
               </div>
             </div>
             <div className="grid gap-6 md:grid-cols-2">

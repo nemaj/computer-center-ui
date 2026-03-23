@@ -130,7 +130,7 @@ const AppHeader: React.FC = () => {
 
           <div className="hidden lg:block">
             <Button size="sm" variant="outline" className="relative" startIcon={<TbCurrencyPeso size={20} />} onClick={() => setIsOpen(true)}>
-              Make a Payment
+              Billing
             </Button>
           </div>
         </div>
