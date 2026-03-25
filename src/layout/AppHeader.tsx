@@ -1,19 +1,13 @@
 "use client";
-import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
-import BillingPaymentModal from "@/components/shared/modals/BillingPaymentModal";
 import Notification from "@/components/shared/Notification";
-import Button from "@/components/ui/button/Button";
-import { Modal } from "@/components/ui/modal";
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
-import { TbCurrencyPeso } from "react-icons/tb";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -44,10 +38,6 @@ const AppHeader: React.FC = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
-  const closeModal = () => {
-    setIsOpen(false)
-  }
 
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
@@ -128,12 +118,6 @@ const AppHeader: React.FC = () => {
               />
             </svg>
           </button>
-
-          <div className="hidden lg:block">
-            <Button size="sm" variant="outline" className="relative" startIcon={<TbCurrencyPeso size={20} />} onClick={() => setIsOpen(true)}>
-              Billing
-            </Button>
-          </div>
         </div>
         <div
           className={`${
@@ -148,8 +132,6 @@ const AppHeader: React.FC = () => {
           <UserDropdown /> 
     
         </div>
-
-        <BillingPaymentModal isOpen={isOpen} closeModal={closeModal} />
         <Notification />
       </div>
     </header>

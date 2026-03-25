@@ -17,6 +17,10 @@ import {
   TableIcon,
   UserCircleIcon,
 } from "../icons/index";
+import { AiOutlineProduct } from "react-icons/ai";
+import { TbCurrencyPeso, TbUsersGroup } from "react-icons/tb";
+import { useAppDispatch } from "@/store/hooks";
+import { setBillingModalOpen } from "@/store/slices/modalSlice";
 
 type NavItem = {
   name: string;
@@ -31,25 +35,35 @@ const navItems: NavItem[] = [
     name: "Dashboard",
     path: "/",
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
   {
-    icon: <ListIcon />,
+    icon: <TbUsersGroup size={20} />,
     name: "Customers",
     path: "/customers",
   },
   {
-    icon: <ListIcon />,
+    icon: <CalenderIcon />,
     name: "Plans",
     path: "/plans",
   },
+  {
+    icon: <AiOutlineProduct size={25} />,
+    name: "Products",
+    path: "/products",
+  },
+  // {
+  //   icon: <AiOutlineProduct size={25} />,
+  //   name: "Products",
+  //   path: "/products",
+  // },
   // {
   //   icon: <UserCircleIcon />,
   //   name: "User Profile",
   //   path: "/profile",
+  // },
+  // {
+  //   icon: <CalenderIcon />,
+  //   name: "Calendar",
+  //   path: "/calendar",
   // },
   // {
   //   name: "Forms",
@@ -72,6 +86,10 @@ const navItems: NavItem[] = [
 ];
 
 const othersItems: NavItem[] = [
+  {
+    icon: <TbCurrencyPeso size={25} />,
+    name: "Billing",
+  },
   // {
   //   icon: <PieChartIcon />,
   //   name: "Charts",
@@ -105,6 +123,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const dispatch = useAppDispatch()
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -150,7 +169,7 @@ const AppSidebar: React.FC = () => {
               )}
             </button>
           ) : (
-            nav.path && (
+            nav.path ? (
               <Link
                 href={nav.path}
                 className={`menu-item group ${
@@ -170,6 +189,26 @@ const AppSidebar: React.FC = () => {
                   <span className={`menu-item-text`}>{nav.name}</span>
                 )}
               </Link>
+            ) : (
+              <div
+                className={`cursor-pointer menu-item group ${
+                  "menu-item-inactive"
+                }`}
+                onClick={() => {
+                  if (nav.name === 'Billing') {
+                    dispatch(setBillingModalOpen(true))
+                  }
+                }}
+              >
+                <span
+                  className={`${"menu-item-icon-inactive"}`}
+                >
+                  {nav.icon}
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <span className={`menu-item-text`}>{nav.name}</span>
+                )}
+              </div>
             )
           )}
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
@@ -364,7 +403,7 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(navItems, "main")}
             </div>
 
-            {/* <div className="">
+            <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
                   !isExpanded && !isHovered
@@ -379,7 +418,7 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(othersItems, "others")}
-            </div> */}
+            </div>
           </div>
         </nav>
       </div>

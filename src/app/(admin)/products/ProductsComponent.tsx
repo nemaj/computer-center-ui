@@ -2,38 +2,46 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Plan } from "./page";
-import { findPlans, getPlans } from "@/api/planApi";
+import { Product } from "./page";
+import { getProducts } from "@/api/productApi";
 import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
-import { NumericFormat } from "react-number-format";
-import classNames from "classnames";
+import Pagination from "@/components/tables/Pagination";
+import CustomerSubsStatus from "@/components/shared/CustomerSubsStatus";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setCustomerTableData } from "@/store/slices/customerSlice";
 
-export default function PlansComponent() {
+export default function ProductsComponent() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Array<Plan>>([])
+  const [data, setData] = useState<Array<Product>>();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
 
-  const getList = async () => {
-    const list = await getPlans();
-    if (list?.data) setData(list.data);
+  const getList = async (page: number, search: string = '') => {
+    const list = await getProducts(page, search);
+    setCurrentPage(list?.data?.page || 1);
+    setTotalPages(list?.data?.totalpages || 1);
+    if (list?.data?.products) {
+      setData(list.data.products)
+    }
   }
 
   useEffect(() => {
-    getList();
+    getList(1);
   }, [])
 
   const handleSearch = async (e: any) => {
     const value = e.target.value;
     setSearch(value);
-    const res = await findPlans(value);
-    if (res?.data) setData(res.data);
+    setCurrentPage(1);
+    getList(1, value);
   };
 
-  const openPlan = (planId: string) => {
-    router.push(`/plans/${planId}`)
+  const openCustomer = (customerId: string) => {
+    // router.push(`/customers/${customerId}`)
   }
 
   return (
@@ -59,14 +67,14 @@ export default function PlansComponent() {
           </span>
           <input
             type="text"
-            placeholder="Search plan..."
+            placeholder="Search product..."
             value={search}
             onChange={handleSearch}
             className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
           />
         </div>
-        <Button size="sm" variant="primary" startIcon={<HiOutlinePlus color="#ffffff" />} onClick={() => openPlan('new')}>
-          Add Plan
+        <Button size="sm" variant="primary" startIcon={<HiOutlinePlus color="#ffffff" />} onClick={() => openCustomer('new')}>
+          Add Product
         </Button>
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -80,32 +88,37 @@ export default function PlansComponent() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
-                    Plan Name
+                    Product Name
                   </TableCell>
                   <TableCell
                     isHeader
-                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
                   >
                     Price
+                  </TableCell>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
+                  >
+                    Cost
                   </TableCell>
                 </TableRow>
               </TableHeader>
 
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {data?.map((plan, idx) => (
-                  <TableRow
-                    key={plan.id}
-                    className={classNames(
-                      "cursor-pointer hover:bg-gray-100"
-                      )}
-                    onClick={() => {openPlan(plan?.id ?? '')}}
-                  >
-                    <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400">
-                      {plan.planName}
+                {data?.map((product: Product, idx: number) => (
+                  <TableRow key={idx} className="cursor-pointer hover:bg-gray-100">
+                    <TableCell className="px-5 py-4 text-start">
+                      <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                        {product.name}
+                      </span>
                     </TableCell>
-                    <TableCell className="px-5 py-4 sm:px-6 text-start">
-                      <NumericFormat value={plan.price} displayType="text" />
+                    <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {product.price}
+                    </TableCell>
+                    <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {product.cost}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -113,6 +126,15 @@ export default function PlansComponent() {
             </Table>
           </div>
         </div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => {
+            getList(page, search)
+          }}
+        />
       </div>
     </>
   )

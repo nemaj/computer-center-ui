@@ -11,18 +11,13 @@ import { useState } from "react";
 import { NumericFormat } from "react-number-format";
 import AsyncSelect from "react-select/async";
 import { createPayments } from '@/api/paymentApi';
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCustomerRefresh, setCustomerTableData } from "@/store/slices/customerSlice";
 import { setNotificationMessage } from "@/store/slices/notificationSlice";
+import { closeModals } from "@/store/slices/modalSlice";
 
-type props = {
-  isOpen: boolean,
-  closeModal: () => void
-}
-
-const BillingPaymentModal = (props: props) => {
-  const {isOpen, closeModal} = props;
-
+const BillingPaymentModal = () => {
+  const isBillingModalOpen = useAppSelector((state) => state.modals.isBillingModalOpen)
   const dispatch = useAppDispatch()
 
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -127,12 +122,12 @@ const BillingPaymentModal = (props: props) => {
     setSelectedInvoice(null);
     setInvoices(null);
     setAmount(null);
-    closeModal?.();
+    dispatch(closeModals())
   }
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen={isBillingModalOpen}
       onClose={handleClose}
       className="max-w-[700px] p-6 lg:p-10"
     >

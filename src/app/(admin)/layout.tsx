@@ -1,5 +1,6 @@
 "use client";
 
+import BillingPaymentModal from "@/components/shared/modals/BillingPaymentModal";
 import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
@@ -33,6 +34,7 @@ export default function AdminLayout({
         <AppHeader />
         {/* Page Content */}
         <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">{children}</div>
+        <BillingPaymentModal />
       </div>
     </div>
   );
