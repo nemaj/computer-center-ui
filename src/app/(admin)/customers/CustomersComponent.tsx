@@ -9,20 +9,28 @@ import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Pagination from "@/components/tables/Pagination";
 import CustomerSubsStatus from "@/components/shared/CustomerSubsStatus";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setCustomerTableData } from "@/store/slices/customerSlice";
 
 export default function CustomersComponent() {
   const router = useRouter();
 
+  const customerTableData = useAppSelector((state) => state.customers.customerTableData)
+  const dispatch = useAppDispatch()
+
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Array<Customer>>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
+  const [data, setData] = useState<Array<Customer>>(customerTableData.customer);
+  const [currentPage, setCurrentPage] = useState<number>(customerTableData.page);
+  const [totalPages, setTotalPages] = useState<number>(customerTableData.totalPages);
 
   const getList = async (page: number, search: string = '') => {
     const list = await getCustomers(page, search);
     setCurrentPage(list?.data?.page || 1);
     setTotalPages(list?.data?.totalpages || 1);
-    if (list?.data?.customers) setData(list.data?.customers);
+    if (list?.data?.customers) {
+      dispatch(setCustomerTableData(list.data))
+      setData(list.data.customers)
+    }
   }
 
   useEffect(() => {
@@ -115,7 +123,7 @@ export default function CustomersComponent() {
 
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {data?.map((customer, idx) => (
+                {data?.map((customer: any, idx: number) => (
                   <TableRow key={idx}>
                     <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400" >
                       <span className="cursor-pointer hover:underline text-brand-500" onClick={() => {openCustomer(customer?.id ?? '')}}>{customer.accountNumber}</span>

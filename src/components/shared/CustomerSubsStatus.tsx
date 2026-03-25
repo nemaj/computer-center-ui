@@ -6,6 +6,7 @@ import Badge from "../ui/badge/Badge";
 import { HiExclamation, HiOutlineExclamation } from "react-icons/hi";
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import { format } from "date-fns";
+import { useAppSelector } from "@/store/hooks";
 
 type props = {
   customerId: string;
@@ -13,6 +14,7 @@ type props = {
 
 const CustomerSubsStatus = (props: props) => {
   const { customerId } = props;
+  const isCustomerRefresh = useAppSelector((state) => state.customers.isCustomerRefresh)
 
   const [subs, setSubs] = useState<any>();
   const [invoices, setInvoices] = useState<any[]>();
@@ -28,30 +30,29 @@ const CustomerSubsStatus = (props: props) => {
 
   const getInvoiceList = async (subscriptionId: string) => {
     const { data } = await getInvoices(subscriptionId);
-    if (data && data?.length) {
-      const list = data;
-      console.log(data, "<=== subs list")
-      setInvoices(list);
-      
-      if (data?.length === 1) {
-        const todayInvoice = list.reduce((acc: any, item: any) => {
-          const find = format(new Date(), 'yyyy-MM') === format(item.invoiceDate, 'yyyy-MM');
-          if (find) {
-            acc = item;
-          }
-          return acc;
-        }, {});
+    const list = data?.length ? data : [];
+    setInvoices(list);
+    if (data?.length === 1) {
+      const todayInvoice = list.reduce((acc: any, item: any) => {
+        const find = format(new Date(), 'yyyy-MM') === format(item.invoiceDate, 'yyyy-MM');
+        if (find) {
+          acc = item;
+        }
+        return acc;
+      }, {});
 
-        console.log(todayInvoice, "<=== todayInvoice")
-        setInvoice(todayInvoice);
-      }
+      setInvoice(todayInvoice);
+    } else {
+      setInvoice(null)
     }
-    // if (res?.data) setInvoice(res.data);
   }
 
   useEffect(() => {
-    getSubs(customerId)
-  }, [customerId])
+    if (!isCustomerRefresh) 
+      setTimeout(() => {
+        getSubs(customerId)
+      }, 250)
+  }, [customerId, isCustomerRefresh])
 
   if (!subs?.id) return null;
 

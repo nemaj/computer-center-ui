@@ -1,11 +1,11 @@
 'use client'
 
-import { generateInvoice } from "@/api/invoiceApi";
-import React, { createContext, useEffect, useRef } from "react";
+import { Provider } from 'react-redux'
+import { store } from '../store/store'
+import { useEffect, useRef } from 'react';
+import { generateInvoice } from '@/api/invoiceApi';
 
-export const AppContext = createContext({});
-
-export const AppProvider = ({ children }: any) => {
+export function Providers({ children }: { children: React.ReactNode }) {
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -26,9 +26,5 @@ export const AppProvider = ({ children }: any) => {
     generate();
   }, []);
 
-  return (
-    <AppContext.Provider value={{}}>
-      {children}
-    </AppContext.Provider>
-  );
-};
+  return <Provider store={store}>{children}</Provider>
+}

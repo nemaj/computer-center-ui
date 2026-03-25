@@ -8,6 +8,7 @@ import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { NumericFormat } from "react-number-format";
+import classNames from "classnames";
 
 export default function PlansComponent() {
   const router = useRouter();
@@ -93,7 +94,13 @@ export default function PlansComponent() {
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {data?.map((plan, idx) => (
-                  <TableRow key={idx} className="cursor-pointer" onClick={() => {openCustomer(plan?.id ?? '')}}>
+                  <TableRow
+                    key={plan.id}
+                    className={classNames(
+                      "cursor-pointer hover:bg-gray-100"
+                      )}
+                    onClick={() => {openCustomer(plan?.id ?? '')}}
+                  >
                     <TableCell className="px-4 py-3 text-gray-800 text-start text-theme-sm dark:text-gray-400">
                       {plan.planName}
                     </TableCell>

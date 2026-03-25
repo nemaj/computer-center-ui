@@ -10,8 +10,9 @@ import Button from "@/components/ui/button/Button";
 import { HiOutlineTrash } from "react-icons/hi";
 import { NumericFormat } from "react-number-format";
 import { unformatCurrency } from "@/utils/formatter";
-import toast, { Toaster } from 'react-hot-toast'
 import { createPlan, getPlan, updatePlan } from "@/api/planApi";
+import { useAppDispatch } from "@/store/hooks";
+import { setNotificationMessage } from "@/store/slices/notificationSlice";
 
 const init = {
   id: 'new',
@@ -24,6 +25,7 @@ export default function PlanFormComponent() {
   const router = useRouter();
   const {planId} = useParams();
   const formRef = useRef(null);
+  const dispatch = useAppDispatch()
 
   const [formData, setFormData] = useState<Plan>(init)
   const [errors, setErrors] = useState<Plan>({} as Plan);
@@ -43,7 +45,6 @@ export default function PlanFormComponent() {
       ...formData,
       [key]: value,
     };
-    console.log(formValues)
     setFormData(formValues);
   };
 
@@ -70,14 +71,13 @@ export default function PlanFormComponent() {
       if (planId === 'new') {
         const res = await createPlan(data);
         if (res?.status === 201) {
-          toast.success("Plan Created!")
+          dispatch(setNotificationMessage('Plan Created!'))
           router.push('/plans');
         }
       } else {
-        console.log(data, "<=== data")
         const res = await updatePlan(planId, data);
         if (res?.status === 200) {
-          toast.success("Plan Updated!")
+          dispatch(setNotificationMessage('Plan Updated!'))
           router.push('/plans');
         }
       }
@@ -209,7 +209,6 @@ export default function PlanFormComponent() {
             </Button>}
           </div>
         </form>
-        <Toaster />
       </div>
     </>
   )

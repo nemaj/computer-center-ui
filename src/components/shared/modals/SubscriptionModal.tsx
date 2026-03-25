@@ -8,6 +8,8 @@ import { Plan } from "@/app/(admin)/plans/page";
 import classNames from "classnames";
 import DatePicker from "@/components/form/date-picker";
 import { format } from "date-fns";
+import { useAppDispatch } from "@/store/hooks";
+import { setNotificationMessage } from "@/store/slices/notificationSlice";
 
 type props = {
   customer: Customer,
@@ -17,6 +19,8 @@ type props = {
 
 const SubscriptionModal = (props: props) => {
   const { customer, isOpen, closeModal } = props;
+
+  const dispatch = useAppDispatch()
 
   const currentDate = new Date();
 
@@ -28,14 +32,12 @@ const SubscriptionModal = (props: props) => {
 
   const getPlanList = async () => {
     const res = await getPlans();
-    console.log(res, '<=== plans')
     if (res?.data) setPlans(res?.data);
   }
 
   const getInfo = async (customerId: string) => {
     getPlanList();
     const res = await getSubscription(customerId);
-    console.log(res, '<=== response subscription');
     if (res?.data?.id) {
       setSubscription(res?.data);
       setSelectedPlan(res?.data?.planId)
@@ -57,15 +59,15 @@ const SubscriptionModal = (props: props) => {
       endDate: null,
       status: 'active'
     };
-    console.log(data, "<== onSubmit Subscription");
 
     let response = null;
     if (subscription?.id) {
       response = await updateSubscription(subscription.id, data);
+      dispatch(setNotificationMessage('Subscription Updated!'))
     } else {
       response = await createSubscription(data);
+      dispatch(setNotificationMessage('Subscription Created!'))
     }
-    console.log(response, "<== saved");
     if (response?.status === 201 || response?.status === 200) {
       closeModal();
     }

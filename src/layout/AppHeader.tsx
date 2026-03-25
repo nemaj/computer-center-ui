@@ -2,6 +2,7 @@
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import BillingPaymentModal from "@/components/shared/modals/BillingPaymentModal";
+import Notification from "@/components/shared/Notification";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { useSidebar } from "@/context/SidebarContext";
@@ -149,6 +150,7 @@ const AppHeader: React.FC = () => {
         </div>
 
         <BillingPaymentModal isOpen={isOpen} closeModal={closeModal} />
+        <Notification />
       </div>
     </header>
   );

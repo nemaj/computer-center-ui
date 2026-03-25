@@ -9,10 +9,11 @@ import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
 import { HiOutlineTrash } from "react-icons/hi";
-import toast, { Toaster } from 'react-hot-toast'
 import { TbCalendarDollar } from "react-icons/tb";
 import SubscriptionModal from "@/components/shared/modals/SubscriptionModal";
 import { Tooltip as ReactTooltip } from "react-tooltip";
+import { useAppDispatch } from "@/store/hooks";
+import { setNotificationMessage } from "@/store/slices/notificationSlice";
 
 const init = {
   id: 'new',
@@ -29,6 +30,7 @@ export default function CustomerFormComponent() {
   const router = useRouter();
   const {customerId} = useParams();
   const formRef = useRef(null);
+  const dispatch = useAppDispatch()
 
   const [customerData, setCustomerData] = useState<Customer>(init)
   const [errors, setErrors] = useState<Customer>({} as Customer);
@@ -78,13 +80,13 @@ export default function CustomerFormComponent() {
       if (customerId === 'new') {
         const res = await createUser(data);
         if (res?.status === 201) {
-          toast.success("Customer Created!")
+          dispatch(setNotificationMessage('Customer Created!'))
           router.push('/customers');
         }
       } else {
         const res = await updateUser(customerId, data);
         if (res?.status === 200) {
-          toast.success("Customer Updated!")
+          dispatch(setNotificationMessage('Customer Updated!'))
           router.push('/customers');
         }
       }
@@ -259,7 +261,6 @@ export default function CustomerFormComponent() {
           </div>
         </form>
         <SubscriptionModal customer={customerData} isOpen={openSubscription} closeModal={() => setOpenSubscription(false)} />
-        <Toaster />
       </div>
     </>
   )

@@ -11,6 +11,9 @@ import { useState } from "react";
 import { NumericFormat } from "react-number-format";
 import AsyncSelect from "react-select/async";
 import { createPayments } from '@/api/paymentApi';
+import { useAppDispatch } from "@/store/hooks";
+import { setCustomerRefresh, setCustomerTableData } from "@/store/slices/customerSlice";
+import { setNotificationMessage } from "@/store/slices/notificationSlice";
 
 type props = {
   isOpen: boolean,
@@ -19,6 +22,8 @@ type props = {
 
 const BillingPaymentModal = (props: props) => {
   const {isOpen, closeModal} = props;
+
+  const dispatch = useAppDispatch()
 
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [amount, setAmount] = useState<any>();
@@ -47,13 +52,14 @@ const BillingPaymentModal = (props: props) => {
   const handleSelectCustomer = async (selected: any) => {
     try {
       setLoading(true);
-      console.log(selected, "<== selected")
-      setSelectedCustomer(selected?.value)
+      setSelectedCustomer(selected)
+      setSelectedInvoice(null);
       const { data: subs } = await getSubscription(selected?.value);
-      console.log(subs, '<=== getSubs')
       if (subs?.id) {
         const {data: list} = await getInvoices(subs.id);
         handleInvoiceList(list)
+      } else {
+        setInvoices([])
       }
     } catch (error) {
       console.error("API error:", error);
@@ -69,9 +75,13 @@ const BillingPaymentModal = (props: props) => {
     }, 0)
   }
 
-  const handleInvoiceList = (invoices: any) => {
-    if (!invoices || !invoices?.length) return [];
-    const list = invoices.reduce((acc: any, item: any) => {
+  const handleInvoiceList = (invoiceList: any) => {
+    if (!invoiceList || !invoiceList?.length) {
+      setSelectedInvoice(null);
+      setInvoices([])
+      return;
+    }
+    const list = invoiceList.reduce((acc: any, item: any) => {
       const totalAmount = item.payments?.length ? item.totalAmount - totalPayments(item.payments) : item.totalAmount;
       const invoice = {
         ...item,
@@ -80,26 +90,30 @@ const BillingPaymentModal = (props: props) => {
       return [ ...acc, invoice ];
     }, []);
 
-    console.log(list, "<==== handleInvoiceList")
+    setSelectedInvoice(list[list.length -1 ]);
     setInvoices(list)
   }
 
   const onSubmit = async () => {
     if (hasError()) return;
     try {
+      dispatch(setCustomerRefresh(true));
       const data = {
         invoiceId: selectedInvoice.id,
         amountPaid: unformatCurrency(amount),
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
-        status: unformatCurrency(amount) === selectedInvoice.totalAmount ? 'paid' : 'partially_paid'
+        status: unformatCurrency(amount) === Number(selectedInvoice.totalAmount) ? 'paid' : 'partially_paid'
       }
 
-      console.log(data, '<=== onSubmit data');
       const res = await createPayments(data);
-      console.log(res, '<=== onSubmit result');
       if (res.status === 201) {
-        console.log('Payment Created!')
-        handleClose();
+        const { data } = await getCustomers(1);
+        if (data) {
+          dispatch(setCustomerTableData(data));
+          dispatch(setCustomerRefresh(false));
+          dispatch(setNotificationMessage('Payment Posted!'))
+          handleClose();
+        }
       }
     } catch (error) {
       console.error("API error:", error);
@@ -139,6 +153,7 @@ const BillingPaymentModal = (props: props) => {
                 loadOptions={loadOptions}
                 defaultOptions
                 placeholder="Search here..."
+                defaultValue={selectedCustomer}
                 onChange={handleSelectCustomer}
               />
             </div>
@@ -157,15 +172,10 @@ const BillingPaymentModal = (props: props) => {
                     invoices?.map((_invoice: any) => (
                       <div
                         className={classNames(
-                          "cursor-pointer border rounded-md p-4",
+                          "border rounded-md p-4",
                           _invoice.id === selectedInvoice?.id && "border-brand-500 hover:border-brand-500 bg-brand-500 hover:bg-brand-500 text-white",
-                          _invoice.id !== selectedInvoice?.id && "hover:border-gray-300 hover:bg-gray-100"
                         )}
                         key={_invoice.id}
-                        onClick={() => {
-                          setSelectedInvoice(_invoice);
-                          setAmount(null)
-                        }}
                       >
                         <p className="text-center text-lg">{format(_invoice.dueDate, 'MMMM')}</p>
                         <p className="text-center text-xs">
