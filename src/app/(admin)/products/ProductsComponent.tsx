@@ -8,23 +8,35 @@ import { HiOutlinePlus } from "react-icons/hi";
 import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Pagination from "@/components/tables/Pagination";
-import CustomerSubsStatus from "@/components/shared/CustomerSubsStatus";
+import ProductDetailsModal from "@/components/shared/modals/ProductDetailsModal";
+import ProductFormModal from "@/components/shared/modals/ProductFormModal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCustomerTableData } from "@/store/slices/customerSlice";
+import { setProductTableData } from "@/store/slices/productSlice";
+import { NumericFormat } from "react-number-format";
 
 export default function ProductsComponent() {
-  const router = useRouter();
+  const productTableData = useAppSelector((state) => state.products.productTableData)
+  const dispatch = useAppDispatch()
 
   const [search, setSearch] = useState("");
-  const [data, setData] = useState<Array<Product>>();
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
+  const [data, setData] = useState<Array<Product>>(productTableData.product);
+  const [currentPage, setCurrentPage] = useState<number>(productTableData.page);
+  const [totalPages, setTotalPages] = useState<number>(productTableData.totalPages);
+  const [detailsModal, setDetailsModal] = useState<any>({
+    productId: null,
+    show: false
+  })
+  const [formModal, setFormModal] = useState<any>({
+    product: null,
+    show: false
+  })
 
   const getList = async (page: number, search: string = '') => {
     const list = await getProducts(page, search);
     setCurrentPage(list?.data?.page || 1);
     setTotalPages(list?.data?.totalpages || 1);
     if (list?.data?.products) {
+      dispatch(setProductTableData(list.data))
       setData(list.data.products)
     }
   }
@@ -40,8 +52,25 @@ export default function ProductsComponent() {
     getList(1, value);
   };
 
-  const openCustomer = (customerId: string) => {
-    // router.push(`/customers/${customerId}`)
+  const openFormModal = (product: any) => {
+    setFormModal({
+      product,
+      show: true
+    })
+  }
+
+  const closeFormModal = () => {
+    setFormModal({
+      product: null,
+      show: false
+    })
+  }
+
+  const openDetails = (productId: string) => {
+    setDetailsModal({
+      productId,
+      show: true
+    })
   }
 
   return (
@@ -73,7 +102,7 @@ export default function ProductsComponent() {
             className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
           />
         </div>
-        <Button size="sm" variant="primary" startIcon={<HiOutlinePlus color="#ffffff" />} onClick={() => openCustomer('new')}>
+        <Button size="sm" variant="primary" startIcon={<HiOutlinePlus color="#ffffff" />} onClick={() => openFormModal({id: 'new'})}>
           Add Product
         </Button>
       </div>
@@ -100,7 +129,7 @@ export default function ProductsComponent() {
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-[200px]"
                   >
-                    Cost
+                    Total Stock
                   </TableCell>
                 </TableRow>
               </TableHeader>
@@ -108,17 +137,28 @@ export default function ProductsComponent() {
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {data?.map((product: Product, idx: number) => (
-                  <TableRow key={idx} className="cursor-pointer hover:bg-gray-100">
+                  <TableRow
+                    key={idx}
+                    className="cursor-pointer hover:bg-gray-100"
+                    onClick={() => {
+                      openDetails(product?.id || '')
+                    }}
+                  >
                     <TableCell className="px-5 py-4 text-start">
                       <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
                         {product.name}
                       </span>
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {product.price}
+                      <NumericFormat
+                        value={product.price}
+                        displayType="text"
+                        prefix="₱ "
+                        thousandSeparator=","
+                      />
                     </TableCell>
                     <TableCell className="px-5 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      {product.cost}
+                      {product.totalStock}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -136,6 +176,31 @@ export default function ProductsComponent() {
           }}
         />
       </div>
+      {detailsModal?.show && (
+        <ProductDetailsModal
+          productId={detailsModal.productId}
+          isOpen={true}
+          closeModal={(refresh: boolean) => {
+            if (refresh) {
+              getList(currentPage)
+            }
+            setDetailsModal({productId: null, show: false})
+            }
+          }
+        />
+      )}
+      {formModal?.show && (
+        <ProductFormModal
+          product={formModal.product}
+          isOpen={true}
+          closeModal={(refresh: boolean) => {
+            if (refresh) {
+              getList(currentPage)
+            }
+            closeFormModal();
+          }}
+        />
+      )}
     </>
   )
 }

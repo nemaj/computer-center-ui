@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useRef, useState } from "react";
-import { Plan } from "../page";
+import React, { useEffect, useRef } from "react";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
@@ -12,78 +11,74 @@ import { NumericFormat } from "react-number-format";
 import { unformatCurrency } from "@/utils/formatter";
 import { createPlan, getPlan, updatePlan } from "@/api/planApi";
 import { useAppDispatch } from "@/store/hooks";
-import { setNotificationMessage } from "@/store/slices/notificationSlice";
-
-const init = {
-  id: 'new',
-  planName: "",
-  price: null,
-  description: '',
-}
+import { setConfirmationModal, setNotificationMessage } from "@/store/slices/notificationSlice";
+import { Controller, useForm } from "react-hook-form";
 
 export default function PlanFormComponent() {
   const router = useRouter();
-  const {planId} = useParams();
+  const { planId } = useParams();
   const formRef = useRef(null);
-  const dispatch = useAppDispatch()
-
-  const [formData, setFormData] = useState<Plan>(init)
-  const [errors, setErrors] = useState<Plan>({} as Plan);
+  const dispatch = useAppDispatch();
+  
+  const {
+    getValues,
+    control,
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    defaultValues: {
+      planName: "",
+      price: null,
+      description: "",
+    },
+  });
 
   const getInfo = async (id: any) => {
     const res = await getPlan(id);
 
-    if (res?.data) setFormData(res.data);
+    if (res?.data) {
+      reset(res.data)
+    };
   };
 
   useEffect(() => {
     if (planId && planId !== 'new') getInfo(planId)
   }, [planId])
 
-  const handleOnChange = (key: string, value: string) => {
-    const formValues = {
-      ...formData,
-      [key]: value,
-    };
-    setFormData(formValues);
-  };
+  const onSubmit = async (data: any) => {
+    delete data.id;
+    delete data.createdAt;
+    delete data.updatedAt;
 
-  // Validate inputs
-  const validate = () => {
-    const newErrors: any = {};
-    if (!formData.planName) {
-      newErrors.planName = "Plan name is required";
-    }
-    if (!formData.price) {
-      newErrors.price = "Plan price is required";
+    const postData = {
+      ...data,
+      price: unformatCurrency(data.price)
     }
 
-    return newErrors;
-  };
-
-  const onSubmit = async (e: any) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length === 0) {
-      const data = { ...formData, price: unformatCurrency(formData.price) };
-      delete data.id;
-
-      if (planId === 'new') {
-        const res = await createPlan(data);
-        if (res?.status === 201) {
-          dispatch(setNotificationMessage('Plan Created!'))
-          router.push('/plans');
-        }
-      } else {
-        const res = await updatePlan(planId, data);
-        if (res?.status === 200) {
-          dispatch(setNotificationMessage('Plan Updated!'))
-          router.push('/plans');
-        }
+    if (planId === 'new') {
+      const res = await createPlan(postData);
+      if (res?.status === 201) {
+        dispatch(setNotificationMessage('Plan Created!'))
+        router.push('/plans');
       }
     } else {
-      setErrors(validationErrors);
+      const res = await updatePlan(planId, postData);
+      if (res?.status === 200) {
+        dispatch(setNotificationMessage('Plan Updated!'))
+        router.push('/plans');
+      }
     }
+  }
+
+  const openConfirmation = () => {
+    dispatch(setConfirmationModal({
+      selectedId: String(planId),
+      label: `Are you sure you want to delete ${getValues('planName')} Plan?`,
+      description: `This action cannot be undone.`,
+      type: 'PLAN'
+    }))
   }
 
   return (
@@ -94,7 +89,7 @@ export default function PlanFormComponent() {
           className="text-xl font-semibold text-gray-800 dark:text-white/90"
           x-text="pageName"
         >
-          {planId === 'new' ? `New Plan Details` : `${formData?.planName} Details`}
+          {planId === 'new' ? `New Plan Details` : `${getValues('planName')} Details`}
         </h2>
         <nav>
           <ol className="flex items-center gap-1.5">
@@ -148,7 +143,7 @@ export default function PlanFormComponent() {
               
             </li>
             <li className="text-sm text-gray-800 dark:text-white/90">
-              {planId === 'new' ? `New Customer` : `${formData?.planName}`}
+              {planId === 'new' ? `New Customer` : `${getValues('planName')}`}
             </li>
           </ol>
         </nav>
@@ -156,7 +151,7 @@ export default function PlanFormComponent() {
       <div className="rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <form
           ref={formRef}
-          onSubmit={onSubmit}
+          onSubmit={handleSubmit(onSubmit)}
         >
           <div className="grid gap-6 mb-6 md:grid-cols-2">
             <div>
@@ -164,27 +159,34 @@ export default function PlanFormComponent() {
               <Input
                 type="text"
                 id="planName"
-                name="planName"
-                defaultValue={formData?.planName ?? ''}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                error={!!errors?.planName}
+                {...register("planName", { required: "Plan Name is required" })}
+                hasError={!!errors?.planName?.message}
+                hint={errors?.planName?.message}
               />
-              {errors?.planName && <span className="text-[12px] text-error-500 ml-2">{errors?.planName}</span>}
             </div>
             <div>
               <Label>Price</Label>
-              <NumericFormat
-                id="price"
+              <Controller
                 name="price"
-                customInput={Input}
-                prefix="₱ "
-                thousandSeparator=","
-                decimalSeparator="."
-                allowNegative={false}
-                value={formData?.price}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+                control={control}
+                rules={{
+                  required: "Price is required",
+                }}
+                render={({ field }) => (
+                  <NumericFormat
+                    {...field}
+                    customInput={Input}
+                    prefix="₱ "
+                    thousandSeparator=","
+                    decimalSeparator="."
+                    onValueChange={(values) => {
+                      field.onChange(values.value); // 🔑 important
+                    }}
+                    hasError={!!errors?.price?.message}
+                    hint={errors?.price?.message}
+                  />
+                )}
               />
-              {errors?.price && <span className="text-[12px] text-error-500 ml-2">{errors?.price}</span>}
             </div>
           </div>
           <div className="mb-6">
@@ -192,9 +194,7 @@ export default function PlanFormComponent() {
             <Input
               type="text"
               id="description"
-              name="description"
-              defaultValue={formData?.description ?? ''}
-              onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+              {...register("description", {})}
             />
           </div>
           <div className="flex justify-between mt-10">
@@ -204,7 +204,7 @@ export default function PlanFormComponent() {
               variant="primary">
                 { planId !== 'new' ? 'Update' : 'Save' }
             </Button>
-            {planId !== 'new' && <Button size="sm" variant="danger">
+            {planId !== 'new' && <Button size="sm" variant="danger" onClick={openConfirmation}>
               <HiOutlineTrash size={18} />
             </Button>}
           </div>

@@ -1,5 +1,6 @@
 "use client";
 import UserDropdown from "@/components/header/UserDropdown";
+import ConfirmationModal from "@/components/shared/modals/ConfirmationModal";
 import Notification from "@/components/shared/Notification";
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
@@ -133,6 +134,7 @@ const AppHeader: React.FC = () => {
     
         </div>
         <Notification />
+        <ConfirmationModal />
       </div>
     </header>
   );

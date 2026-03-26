@@ -11,9 +11,10 @@ export interface Product {
   id?: string;
   name: string;
   sku: string;
-  price: number;
-  cost: number;
+  price: number | null;
+  cost: number | null;
   isActive: boolean;
+  totalStock?: number;
 }
 
 export default function ProductPage() {

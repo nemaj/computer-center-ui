@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from "react";
-import { getCustomer, createUser, updateUser } from '@/api/customerApi';
+import { getCustomer, createCustomer, updateCustomer } from '@/api/customerApi';
 import { Customer } from "../page";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
@@ -13,89 +13,76 @@ import { TbCalendarDollar } from "react-icons/tb";
 import SubscriptionModal from "@/components/shared/modals/SubscriptionModal";
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import { useAppDispatch } from "@/store/hooks";
-import { setNotificationMessage } from "@/store/slices/notificationSlice";
-
-const init = {
-  id: 'new',
-  accountNumber: "",
-  dueDate: '',
-  lastName: '',
-  firstName: '',
-  middleName: '',
-  address: '',
-  contact: '',
-}
+import { setConfirmationModal, setNotificationMessage } from "@/store/slices/notificationSlice";
+import { useForm } from "react-hook-form";
 
 export default function CustomerFormComponent() {
   const router = useRouter();
   const {customerId} = useParams();
   const formRef = useRef(null);
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
+  
+  const {
+    getValues,
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    defaultValues: {
+      lastName: "",
+      firstName: "",
+      middleName: "",
+      accountNumber: "",
+      address: "",
+      contact: "",
+    },
+  });
 
-  const [customerData, setCustomerData] = useState<Customer>(init)
-  const [errors, setErrors] = useState<Customer>({} as Customer);
   const [openSubscription, setOpenSubscription] = useState(false);
+  const [customer, setCustomer] = useState<Customer>();
 
   const getInfo = async (id: any) => {
     const res = await getCustomer(id);
 
-    if (res?.data) setCustomerData(res.data);
+    if (res?.data) {
+      reset(res.data);
+      setCustomer(res.data);
+    }
   };
 
   useEffect(() => {
     if (customerId && customerId !== 'new') getInfo(customerId)
   }, [customerId])
 
-  const handleOnChange = (key: string, value: string) => {
-    const formValues = {
-      ...customerData,
-      [key]: value,
-    };
-    setCustomerData(formValues);
-  };
+  const onSubmit = async (data: any) => {
+    delete data.id;
+    delete data.createdAt;
+    delete data.updatedAt;
 
-  // Validate inputs
-  const validate = () => {
-    const newErrors: Customer = {} as Customer;
-    if (!customerData.firstName) {
-      newErrors.firstName = "First name is required";
-    }
-    if (!customerData.lastName) {
-      newErrors.lastName = "Last name is required";
-    }
-    if (!customerData.accountNumber) {
-      newErrors.accountNumber = "Account number is required";
-    }
-
-    return newErrors;
-  };
-
-  const onSubmit = async (e: any) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length === 0) {
-      const data = {...customerData};
-      delete data.id;
-
-      if (customerId === 'new') {
-        const res = await createUser(data);
-        if (res?.status === 201) {
-          dispatch(setNotificationMessage('Customer Created!'))
-          router.push('/customers');
-        }
-      } else {
-        const res = await updateUser(customerId, data);
-        if (res?.status === 200) {
-          dispatch(setNotificationMessage('Customer Updated!'))
-          router.push('/customers');
-        }
+    if (customerId === 'new') {
+      const res = await createCustomer(data);
+      if (res?.status === 201) {
+        dispatch(setNotificationMessage('Customer Created!'))
+        router.push('/customers');
       }
     } else {
-      setErrors(validationErrors);
+      const res = await updateCustomer(customerId, data);
+      if (res?.status === 200) {
+        dispatch(setNotificationMessage('Customer Updated!'))
+        router.push('/customers');
+      }
     }
   }
-
-  if (customerId !== 'new' && !customerData?.accountNumber) return <></>;
+  
+  const openConfirmation = () => {
+    dispatch(setConfirmationModal({
+      selectedId: String(customerId),
+      label: `Are you sure you want to delete ${getValues('accountNumber')}?`,
+      description: `This action cannot be undone.`,
+      type: 'CUSTOMER'
+    }))
+  }
 
   return (
     <>
@@ -104,7 +91,7 @@ export default function CustomerFormComponent() {
           className="text-xl font-semibold text-gray-800 dark:text-white/90 capitalize flex items-center gap-[10px]"
           x-text="pageName"
         >
-          {customerId === 'new' ? `New Customer Details` : `${customerData?.firstName.toLowerCase()} ${customerData?.lastName.toLowerCase()} Details`}
+          {customerId === 'new' ? `New Customer Details` : `${getValues('firstName').toLowerCase()} ${getValues('lastName').toLowerCase()} Details`}
           <TbCalendarDollar size={25} className="cursor-pointer hover:text-blue-600" onClick={() => setOpenSubscription(true)} data-tooltip-id="subs-tooltip" />
         </h2>
         <ReactTooltip
@@ -164,7 +151,7 @@ export default function CustomerFormComponent() {
               
             </li>
             <li className="text-sm text-gray-800 dark:text-white/90">
-              {customerId === 'new' ? `New Customer` : `${customerData?.firstName} ${customerData?.lastName}`}
+              {customerId === 'new' ? `New Customer` : `${getValues('firstName')} ${getValues('lastName')}`}
             </li>
           </ol>
         </nav>
@@ -172,7 +159,7 @@ export default function CustomerFormComponent() {
       <div className="rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <form
           ref={formRef}
-          onSubmit={onSubmit}
+          onSubmit={handleSubmit(onSubmit)}
         >
           <div className="grid gap-6 mb-6 md:grid-cols-2">
             <div>
@@ -180,24 +167,20 @@ export default function CustomerFormComponent() {
               <Input
                 type="text"
                 id="firstName"
-                name="firstName"
-                defaultValue={customerData?.firstName ?? ''}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                error={!!errors?.firstName}
+                {...register("firstName", { required: "First name is required" })}
+                hasError={!!errors?.firstName?.message}
+                hint={errors?.firstName?.message}
               />
-              {errors?.firstName && <span className="text-[12px] text-error-500 ml-2">{errors?.firstName}</span>}
             </div>
             <div>
               <Label>Last Name</Label>
               <Input
                 type="text"
                 id="lastName"
-                name="lastName"
-                defaultValue={customerData?.lastName ?? ''}
-                onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                error={!!errors?.lastName}
+                {...register("lastName", { required: "Last name is required" })}
+                hasError={!!errors?.lastName?.message}
+                hint={errors?.lastName?.message}
               />
-              {errors?.lastName && <span className="text-[12px] text-error-500 ml-2">{errors?.lastName}</span>}
             </div>
           </div>
           <div className="grid gap-6 mb-6 md:grid-cols-2">
@@ -207,9 +190,7 @@ export default function CustomerFormComponent() {
                 <Input
                   type="text"
                   id="middleName"
-                  name="middleName"
-                  defaultValue={customerData?.middleName ?? ''}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+                  {...register("middleName", {})}
                 />
               </div>
             </div>
@@ -219,21 +200,17 @@ export default function CustomerFormComponent() {
                 <Input
                   type="text"
                   id="accountNumber"
-                  name="accountNumber"
-                  defaultValue={customerData?.accountNumber ?? ''}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
-                  error={!!errors?.accountNumber}
+                  {...register("accountNumber", { required: "Account Number is required" })}
+                  hasError={!!errors?.accountNumber?.message}
+                  hint={errors?.accountNumber?.message}
                 />
-                {errors?.accountNumber && <span className="text-[12px] text-error-500 ml-2">{errors?.accountNumber}</span>}
               </div>
               <div>
                 <Label>Contact</Label>
                 <Input
                   type="text"
                   id="contact"
-                  name="contact"
-                  defaultValue={customerData?.contact ?? ''}
-                  onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+                  {...register("contact", {})}
                 />
               </div>
             </div>
@@ -243,9 +220,7 @@ export default function CustomerFormComponent() {
             <Input
               type="text"
               id="address"
-              name="address"
-              defaultValue={customerData?.address ?? ''}
-              onChange={(e) => handleOnChange(e.target.name, e.target.value)}
+              {...register("address", {})}
             />
           </div>
           <div className="flex justify-between mt-10">
@@ -255,12 +230,12 @@ export default function CustomerFormComponent() {
               variant="primary">
                 { customerId !== 'new' ? 'Update' : 'Save' }
             </Button>
-            {customerId !== 'new' && <Button size="sm" variant="danger">
+            {customerId !== 'new' && <Button size="sm" variant="danger" onClick={openConfirmation}>
               <HiOutlineTrash size={18} />
             </Button>}
           </div>
         </form>
-        <SubscriptionModal customer={customerData} isOpen={openSubscription} closeModal={() => setOpenSubscription(false)} />
+        {customer?.id && <SubscriptionModal customer={customer} isOpen={openSubscription} closeModal={() => setOpenSubscription(false)} />}
       </div>
     </>
   )

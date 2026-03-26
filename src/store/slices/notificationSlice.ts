@@ -1,13 +1,27 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit'
 
+type ConfirmationProps = {
+  selectedId: string | null,
+  label: string,
+  description?: string,
+  type: 'PLAN' | 'CUSTOMER' | 'PRODUCT' | null
+}
+
 export type NotificationState = {
-  message: String
+  message: String,
+  confirmation: ConfirmationProps,
 }
 
 export const SLICE_NAME = 'notification'
 
 const initialState: NotificationState = {
-  message: ''
+  message: '',
+  confirmation: {
+    selectedId: null,
+    label: '',
+    description: '',
+    type: null
+  }
 }
 
 export const notificationSlice = createSlice({
@@ -22,6 +36,20 @@ export const notificationSlice = createSlice({
     },
     clearToast: (state) => {
       state.message = '';
+    },
+    setConfirmationModal: (
+      state,
+      action: PayloadAction<NotificationState['confirmation']>,
+    ) => {
+      state.confirmation = action.payload
+    },
+    closeConfirmation: (state) => {
+      state.confirmation = {
+        selectedId: null,
+        label: '',
+        description: '',
+        type: null
+      };
     }
   },
 })
@@ -29,5 +57,7 @@ export const notificationSlice = createSlice({
 export const {
   setNotificationMessage,
   clearToast,
+  setConfirmationModal,
+  closeConfirmation,
 } = notificationSlice.actions
 export default notificationSlice.reducer

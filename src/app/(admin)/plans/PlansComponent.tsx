@@ -105,7 +105,13 @@ export default function PlansComponent() {
                       {plan.planName}
                     </TableCell>
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
-                      <NumericFormat value={plan.price} displayType="text" />
+                      <NumericFormat
+                        className="text-sm"
+                        value={plan.price}
+                        displayType="text"
+                        prefix="₱ "
+                        thousandSeparator=","
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

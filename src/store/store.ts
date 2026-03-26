@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import customerReducer from './slices/customerSlice'
+import productReducer from './slices/productSlice'
 import notificationSlice from './slices/notificationSlice'
 import modalSlice from './slices/modalSlice'
 
@@ -8,6 +9,7 @@ export const store = configureStore({
     notification: notificationSlice,
     modals: modalSlice,
     customers: customerReducer,
+    products: productReducer,
   } as any,
 })
 
